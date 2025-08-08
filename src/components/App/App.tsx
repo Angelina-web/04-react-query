@@ -1,5 +1,5 @@
 import css from "./App.module.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { fetchMovies } from "../../services/movieService";
 import ErrorMessage from "../ErrorMessage/ErrorMessage";
 import Loader from "../Loader/Loader";
@@ -10,6 +10,7 @@ import type { Movie } from "../../types/movie";
 import { Toaster } from "react-hot-toast";
 import ReactPaginate from "react-paginate";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 export default function App() {
   const [query, setQuery] = useState("");
@@ -17,13 +18,19 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data, isLoading, isError, error, isSuccess } = useQuery({
-    queryKey: ["articles", query, currentPage],
+    queryKey: ["movies", query, currentPage],
     queryFn: () => fetchMovies(query, currentPage),
     enabled: query !== "",
     placeholderData: keepPreviousData,
   });
 
   const totalPages = data?.total_pages || 0;
+
+useEffect(() => {
+    if (isSuccess && data.results.length === 0) {
+      toast("No movies found for your request.");
+    }
+  }, [isSuccess, data]);
 
   const handleSearch = (query: string) => {
     setQuery(query);
@@ -38,7 +45,7 @@ export default function App() {
       {isLoading && <Loader />}
       {isError && (
         <ErrorMessage
-          message={(error as Error).message || "Something went wrong"}
+          message={(error as Error).message || "There was an error, please try again..."}
         />
       )}
       {isSuccess && data.results.length > 0 && (
